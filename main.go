@@ -12,18 +12,16 @@ import (
 )
 func main() {
 	r := Ez.New()
-	r.GET("/", func(c *Ez.Context) {
-		c.HTML(http.StatusOK,"<h1>This is the index</h1>")
-	})
-	r.GET("/hello", func(c *Ez.Context) {
-		c.String(http.StatusOK, "hello")
-	})
-	r.POST("/hello", func(c *Ez.Context) {
+
+	r.POST("/hello/:id/*filepath", func(c *Ez.Context) {
 		c.JSON(http.StatusOK,Ez.H{
 			"name" : c.PostForm("name"),
 			"age" : c.PostForm("age"),
+			"id" : c.Param("id"),
+			"filepath" : c.Param("filepath"),
 		})
 	})
+
 
 	r.Run(":9090")
 }
