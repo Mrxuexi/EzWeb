@@ -21,8 +21,15 @@ type Context struct {
 	//请求的信息，包括路由和方法
 	Path string
 	Method string
+	Params map[string]string /*用于存储外面拿到的参数 ":xxx" or "*xxx" */
 	//响应的状态码
 	StatusCode int
+}
+
+// Param 是c的Param的value的获取方法
+func (c *Context) Param(key string) string {
+	value, _ := c.Params[key]
+	return value
 }
 
 //Context构造方法
