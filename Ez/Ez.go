@@ -14,8 +14,16 @@ import (
 // HandlerFunc 是Ez框架中定义的对请求的响应处理方法，传入*Context针对http请求处理
 type HandlerFunc func(*Context)
 
+type RouterGroup struct {
+	prefix      string
+	middlewares []HandlerFunc // 用于存储分组的中间件
+	engine      *Engine       // 这里实现的嵌套让其拥有了engine的全部属性,所有的分组都使用了Engine实例,可以通过engine间接的访问各种接口
+}
+
 // Engine 实现了"net/http"标准库中的 Handler 接口中的ServeHTTP方法
 type Engine struct {
+	*RouterGroup	//嵌套，让Engine拥有RouterGroup的全部属性，这样做体现在我们使用r.Group()创建路由组的时候
+	groups []*RouterGroup
 	//用于存储路由处理方法
 	//key是方法类型加路径，value是用户的处理方法
 	router *router
@@ -29,24 +37,38 @@ func (engine *Engine) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	engine.router.handle(c)
 }
 
-// New 路由存储结构的构造函数
+// New Engine
 func New() *Engine {
-	return &Engine{router: newRouter()}
+	//新建一个engine实例
+	engine := &Engine{router: newRouter()}
+	engine.RouterGroup = &RouterGroup{engine: engine}
+	engine.groups = []*RouterGroup{engine.RouterGroup}
+	return engine
 }
 
-// addRoute 方法封装在router中，在 router map[string]HandlerFunc 中存入对应处理方法
-func (engine *Engine) addRoute(method string, path string, handler HandlerFunc) {
-	engine.router.addRoute(method, path, handler)
+// Group 新建Group
+func (group *RouterGroup) Group(prefix string) *RouterGroup {
+	engine := group.engine
+	newGroup := &RouterGroup{
+		prefix:      group.prefix + prefix,		//前缀
+		engine:      engine,					//任何路由组都共享一个处理实例
+	}
+	engine.groups = append(engine.groups, newGroup)
+	return newGroup
 }
 
-// GET 实现的是注册GET请求的路径和对应方法，调用了addRoute，存入了route 结构体的handler中
-func (engine *Engine) GET(path string, handler HandlerFunc) {
-	engine.addRoute("GET", path, handler)
+// engine.router.addRoute 方法封装在router中
+func (group *RouterGroup) addRoute(method string, last string, handler HandlerFunc) {
+	path := group.prefix + last
+	group.engine.router.addRoute(method, path, handler)
 }
 
-// POST 同上
-func (engine *Engine) POST(path string, handler HandlerFunc) {
-	engine.addRoute("POST", path, handler)
+func (group *RouterGroup) GET(path string, handler HandlerFunc) {
+	group.addRoute("GET", path, handler)
+}
+
+func (group *RouterGroup) POST(path string, handler HandlerFunc) {
+	group.addRoute("POST", path, handler)
 }
 
 

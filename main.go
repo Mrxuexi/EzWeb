@@ -13,14 +13,19 @@ import (
 func main() {
 	r := Ez.New()
 
-	r.POST("/hello/:id/*filepath", func(c *Ez.Context) {
-		c.JSON(http.StatusOK,Ez.H{
-			"name" : c.PostForm("name"),
-			"age" : c.PostForm("age"),
-			"id" : c.Param("id"),
-			"filepath" : c.Param("filepath"),
+	api := r.Group("/api")
+	{
+		api.POST("/hello", func(c *Ez.Context) {
+			c.JSON(http.StatusOK,Ez.H{
+				"message" : "hello",
+			})
 		})
-	})
+		api.GET("/login", func(c *Ez.Context) {
+			c.JSON(200,Ez.H{
+				"name" : c.PostForm("name"),
+			})
+		})
+	}
 
 
 	r.Run(":9090")
