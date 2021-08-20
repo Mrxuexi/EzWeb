@@ -5,6 +5,4 @@
 </p>
 不同阶段的代码请注意选择分支
 </p>
-demo1:(https://www.cnblogs.com/Mrxuexi/p/15149490.html)
-</p>
-demo2:(https://www.cnblogs.com/Mrxuexi/p/15153047.html)
+https://www.cnblogs.com/Mrxuexi/p/15166023.html
