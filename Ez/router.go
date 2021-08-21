@@ -95,8 +95,13 @@ func (r *router) handle(c *Context)  {
 		c.Params = params
 		//拿目的节点中的path做key来找handlers
 		key := c.Method + "-" + n.path
-		r.handlers[key](c)
+		//根据路径拿到处理器
+		c.handlers = append(c.handlers, r.handlers[key])
 	}else {
-		c.String(http.StatusNotFound,"404 NOT FOUND")
+		//不存在节点的情况下，给生成的c加入一个404方法
+		c.handlers = append(c.handlers, func(c *Context) {
+			c.String(http.StatusNotFound, "404 NOT FOUND: ", c.Path)
+		})
 	}
+	c.Next()
 }

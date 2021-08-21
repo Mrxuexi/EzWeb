@@ -8,7 +8,10 @@
 package Ez
 
 import (
+	"log"
 	"net/http"
+	"strings"
+	"time"
 )
 
 // HandlerFunc 是Ez框架中定义的对请求的响应处理方法，传入*Context针对http请求处理
@@ -31,9 +34,19 @@ type Engine struct {
 
 // ServeHTTP 方法的实现，用于实现处理HTTP请求
 func (engine *Engine) ServeHTTP(w http.ResponseWriter, req *http.Request) {
+	var middlewares []HandlerFunc
+	for _, group := range engine.groups {
+		//比对路由组存的前缀和请求路径，把属于这个请求映射的路由组中的中间件取到
+		//意思就是比对发现该请求属于哪一个路由组，需要哪些中间件，取出来执行
+		if strings.HasPrefix(req.URL.Path, group.prefix) {
+			middlewares = append(middlewares, group.middlewares...)
+		}
+	}
 	//根据req和w实例一个context
 	c := newContext(w, req)
-	//传入开始执行处理
+	//将取道的中间件赋给这个context
+	c.handlers = middlewares
+	//通过封装好的context执行处理
 	engine.router.handle(c)
 }
 
@@ -74,4 +87,17 @@ func (group *RouterGroup) POST(path string, handler HandlerFunc) {
 
 func (engine *Engine) Run(addr string) (err error) {
 	return http.ListenAndServe(addr, engine)
+}
+
+// 将路中间件，放入路由组的中间件方法切片中
+func (group *RouterGroup) Use(middlewares ...HandlerFunc)  {
+	group.middlewares = append(group.middlewares, middlewares...)
+}
+
+func Logger() HandlerFunc {
+	return func(c *Context) {
+		t := time.Now()
+		c.Next()
+		log.Printf("[%d] %s in %v", c.StatusCode, c.Req.RequestURI, time.Since(t))
+	}
 }

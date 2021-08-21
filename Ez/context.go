@@ -21,9 +21,12 @@ type Context struct {
 	//请求的信息，包括路由和方法
 	Path string
 	Method string
-	Params map[string]string /*用于存储外面拿到的参数 ":xxx" or "*xxx" */
+	Params map[string]string 	/*用于存储外面拿到的参数 ":xxx" or "*xxx" */
 	//响应的状态码
 	StatusCode int
+	//中间件
+	handlers []HandlerFunc
+	index    int	/* 用于记录当前执行到第几个中间件 */
 }
 
 // Param 是c的Param的value的获取方法
@@ -39,6 +42,15 @@ func newContext(w http.ResponseWriter, req *http.Request) *Context {
 		Req:        req,
 		Path:       req.URL.Path,
 		Method:     req.Method,
+		index: 		-1,
+	}
+}
+// 当中间件调用了 Next 方法时，就往后执行下一个，同时index交由下一个中间件控制
+func (c *Context) Next()  {
+	c.index++
+	//执行完之后所有的handlers
+	for ;c.index < len(c.handlers); c.index++{
+		c.handlers[c.index](c)
 	}
 }
 
